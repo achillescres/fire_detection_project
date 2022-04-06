@@ -40,6 +40,7 @@ def img(img, title):
         return img  # (img - np.nanmin(img)) / (np.nanmax(img) + np.nanmin(img))
 
     plt.imshow(scale_minmax(mask_it(img)), cmap=plt.cm.Greys)
+    plt.colorbar()
     plt.title(title)
     plt.show()
 

@@ -1,4 +1,5 @@
 import numpy as np
+from math import isinf
 
 import troubles as tr
 
@@ -50,10 +51,13 @@ def get_data(file_path, file03_path):
         # y = np.copy(vrt).astype(int)
         # tr.img(y)
         # band_si.data[vrt] = 0
+        band_si[vrt] = 0
         band_si.mask = vrt
 
         L = brightness(band_si, scale, offset)
+        # tr.img(L, "L")
         T = temperature(L, length)
+        # tr.img(T, 'T')
         # print(tr.counter(L))
         return T
 
@@ -204,11 +208,25 @@ def zenith(band, shape):
     return Z
 
 
-def latlon():
+def get_latlon():
     lat = gdal.Open('HDF4_EOS:EOS_SWATH_GEOL:"./files/mod03.hdf":MODIS_Swath_Type_GEO:Latitude').ReadAsArray()
-    lon = gdal.Open('HDF4_EOS:EOS_SWATH_GEOL:"mod03.hdf":MODIS_Swath_Type_GEO:Longitude').ReadAsArray()
+    lon = gdal.Open('HDF4_EOS:EOS_SWATH_GEOL:"./files/mod03.hdf":MODIS_Swath_Type_GEO:Longitude').ReadAsArray()
 
     return {'lat': lat, 'lon': lon}
+
+
+def get_fires_latlon(fires_ij):
+    latlon = get_latlon()
+    # print(latlon)
+
+    # print(fires_ij)
+    fire_latlon = np.zeros(fires_ij.shape)
+    for index, [i, j] in enumerate(fires_ij):
+        fire_latlon[index] = np.array(
+            [latlon['lat'][i, j], latlon['lon'][i, j]]
+        )
+
+    return fire_latlon
 
 
 def brightness(band_si, scale, offset):  # RADIANCE
@@ -234,6 +252,62 @@ def temperature(band_L, length):  # RADIANCE
 def reflectance(band_si, ref_offset, ref_scale, zenith):
     return (ref_scale * (band_si - ref_offset)) / np.cos(np.radians(zenith))
 
+
+def calculate_polygon(i, j, latlon):
+    lat, lon = latlon['lat'][i, j], latlon['lon'][i, j]
+
+    try:
+        up = latlon['lat'][i - 1, j]
+        up = abs(lat - up) / 2
+    except Exception:
+        up = float('inf')
+
+    try:
+        down = latlon['lat'][i + 1, j]
+        down = abs(lat - down) / 2
+    except Exception:
+        down = float('inf')
+
+    if isinf(up):
+        up = down
+    elif isinf(down):
+        down = up
+
+    try:
+        left = latlon['lon'][i, j - 1]
+        left = abs(lon - left) / 2
+    except Exception:
+        left = float('inf')
+
+    try:
+        right = latlon['lon'][i, j + 1]
+        right = abs(lon - right) / 2
+    except Exception:
+        right = float('inf')
+
+    if isinf(right):
+        right = left
+    elif isinf(left):
+        left = right
+
+    polygon = np.zeros((4 + 1, 2))
+    polygon[0] = np.array([lon - left, lat + up])
+    polygon[1] = np.array([lon + right, lat + up])
+    polygon[2] = np.array([lon + right, lat - down])
+    polygon[3] = np.array([lon - left, lat - down])
+    polygon[4] = np.array([lon - left, lat + up])
+
+    return polygon
+
+
+def get_polygons(fires_ij):
+    latlon = get_latlon()
+
+    fires_polygons = np.zeros(fires_ij.shape)
+    for index, [i, j] in enumerate(fires_ij):
+        fires_polygons[index] = calculate_polygon(i, j, latlon)
+
+    return fires_polygons
 
 """
 if time == 'day':

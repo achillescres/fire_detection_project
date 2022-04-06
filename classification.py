@@ -18,9 +18,9 @@ def classify_fires(data, day_time):
 
     # Customing t4
     t4 = t4_22.copy()
-    t4_vrt = (t4_22 > 329.5) | t4_22.mask
+    t4_vrt = (t4_22 > 330.9) | t4_22.mask
     t4[t4_vrt] = t4_21[t4_vrt]
-    t4.mask[t4_21.mask] = True
+    t4.mask[t4_21.mask & t4_vrt] = True
     print('Mounted data')
 
     # Classifying
@@ -65,6 +65,7 @@ def classify_fires(data, day_time):
 
     return fires
 
+
 def cloud(time, classed: np.ma.masked_array, r064, r085, t12):
     if time == 'day':
         vrt = ((r064 + r085) > 0.9) | (t12 < 265) | (((r064 + r085) > 0.7) & (t12 < 285))
@@ -82,6 +83,8 @@ def cloud(time, classed: np.ma.masked_array, r064, r085, t12):
 
 def potential_fire(time, classed, t4, t11, r085):
     dT = t4 - t11
+    tr.img(dT, 'Delta T')
+    tr.img(r085, 'R085')
     if time == 'day':
         vrt = ~((t4 > 310) & (dT > 10) & (r085 < 0.3))
         classed[vrt] = 2
@@ -99,11 +102,11 @@ def potential_fire(time, classed, t4, t11, r085):
 def absolute_fire(time, classed, t4):
     import troubles as tr
     if time == 'day':
-        vrt = (t4 > 360) & (~classed.mask)
+        vrt = (t4 > 321) & (~classed.mask)
         tr.img(vrt.astype(int), 'VRT')
         classed[vrt] = 3
     elif time == 'night':
-        vrt = (t4 > 320) & (~classed.mask)
+        vrt = (t4 > 315) & (~classed.mask)
         classed[vrt] = 3
     else:
         raise RuntimeError("var time must be 'day' or 'night'!")
