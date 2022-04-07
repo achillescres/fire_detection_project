@@ -102,11 +102,11 @@ def potential_fire(time, classed, t4, t11, r085):
 def absolute_fire(time, classed, t4):
     import troubles as tr
     if time == 'day':
-        vrt = (t4 > 321) & (~classed.mask)
+        vrt = (t4 > 340) & (~classed.mask)
         tr.img(vrt.astype(int), 'VRT')
         classed[vrt] = 3
     elif time == 'night':
-        vrt = (t4 > 315) & (~classed.mask)
+        vrt = (t4 > 310) & (~classed.mask)
         classed[vrt] = 3
     else:
         raise RuntimeError("var time must be 'day' or 'night'!")

@@ -1,7 +1,7 @@
 import numpy as np
 import tools as to
 
-from osgeo import gdal
+from osgeo import gdal, ogr
 gdal.UseExceptions()
 
 
@@ -65,8 +65,8 @@ class FirePixel:
     def get_dict(self):
         d = dict()
 
-        d['col'] = self.j
-        d['row'] = self.i
+        d['col'] = self.j + 1
+        d['row'] = self.i + 1
         d['latitude'] = self.latlon[0]
         d['longitude'] = self.latlon[1]
         d['T4'] = self.t4
@@ -107,7 +107,7 @@ def write_to_csv(region, imageid, pixels):
             **pixel.get_dict(),
             'IMAGEID': imageid,
             'region': region,
-            'N': i,
+            'N': i + 1,
         })
 
     columns = ['IMAGEID', 'N', 'col', 'row', 'longitude', 'latitude',
@@ -117,3 +117,23 @@ def write_to_csv(region, imageid, pixels):
     print(df)
 
     df.to_csv('./output/ans.csv', index=False)
+
+    s = f"GEOMETRYCOLLECTION({', '.join([i['pixel_poly'][1:-1] for i in data])})"
+    print(s)
+    with open('./output/wktg.txt', 'w') as f:
+        f.write(s)
+
+
+def cut(fires, modis_path):
+    array2file(fires, 'GTiff', './outpu/local_cut.tif', modis_path)
+
+    OutTile = gdal.Warp("./output/local_cut.tif",
+                        "./output/final_cut.tif",
+                        cutlineDSName='./files/aoi.shp',
+                        cropToCutline=True,
+                        dstNodata=0)
+
+    OutTile = None
+
+    fires = gdal.Open("./output/final_cut.tif").ReadAsArray()
+    return fires

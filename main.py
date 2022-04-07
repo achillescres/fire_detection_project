@@ -27,7 +27,9 @@ raw_class = cls.classify_fires(data, day_time)
 fires = raw_class['fires']
 t4 = raw_class['t4']
 
-tr.img(fires, 'Fires final')
+plt_fires = data['r085']
+plt_fires[fires == 1] = 2
+tr.img(plt_fires, 'Fires final')
 
 # driver = gdal.GetDriverByName('GTiff')
 
@@ -39,11 +41,15 @@ tr.img(fires, 'Fires final')
 #     'GTiff', 'fires.tif', modis_path
 # )
 
+writer.array2file(fires, 'GTiff', 'fires.tif', modis_path)
+# fires = writer.cut(fires, './files/reg.sph')
+
 print('Fires final:', tr.counter(fires))
 fires_ij = np.dstack(np.where(fires == 1))[0]
 fires_latlon = to.get_fires_latlon(fires_ij)
 fires_polygons = to.get_polygons(fires_ij)
 
+cut = writer.cut(fires, modis_path)
 writer.write_answer('kalin?', data['imageid'], fires_ij,
                     fires_latlon, fires_polygons, t4, data['t11'])
 # print(writer.get_fires_latlon(fires))
