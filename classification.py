@@ -29,14 +29,14 @@ def classify_fires(data, day_time):
     print('ABS', tr.counter(classed.data))
     print('Created blank array')
 
-    # Cloud mask
+    # Cloud mask 1
     classed = cloud(day_time, classed, r064, r085, t12)
     print('ABS', tr.counter(classed.data))
     print('Cloud masked')
 
-    # Water mask
-    classed[water_mask] = 1
-    classed.mask[water_mask] = True
+    # Water mask 1
+    classed[water_mask & (~classed.mask)] = 1
+    classed.mask[water_mask & (~classed.mask)] = True
     print('ABS', tr.counter(classed.data))
     print('Water masked')
 
@@ -63,7 +63,7 @@ def classify_fires(data, day_time):
     print('Fires')
     tr.img(fires, 'Fires')
 
-    return fires
+    return {'fires': fires, 't4': t4}
 
 
 def cloud(time, classed: np.ma.masked_array, r064, r085, t12):

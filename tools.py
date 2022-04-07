@@ -4,6 +4,7 @@ from math import isinf
 import troubles as tr
 
 from osgeo import gdal
+
 gdal.UseExceptions()
 
 
@@ -11,10 +12,12 @@ def get_land_sea_mask(path):
     path = gdal.Open(path).GetSubDatasets()[6][0]
 
     mask = gdal.Open(path).ReadAsArray()
+    print(tr.counter(mask))
     mask = tr.get_ma(mask)
+    mask.data[mask >= 221] = -1
     mask.mask[mask >= 221] = True
 
-    water_mask = mask == 0
+    water_mask = (mask == 0) | (mask == 3)
 
     return water_mask
 
@@ -32,6 +35,15 @@ def get_data(file_path, file03_path):
     # Temperatures
     emis_ds = gdal.Open(sds[2][0])
     emis_meta = emis_ds.GetMetadata_Dict()
+
+    # IMAGEID
+    imageid = emis_meta['LOCALGRANULEID']
+    sat_title = imageid.find('MOD')
+    if sat_title == -1:
+        print('WARNING: EMPTY IMAGE ID!')
+        imageid = ''
+    else:
+        imageid = imageid[:sat_title - 1]
 
     def get_temperature(band, n, length, meta):  # ##!!!
         try:
@@ -172,7 +184,8 @@ def get_data(file_path, file03_path):
         't4_21': T4_21, 't4_22': T4_22, 't11': T11, 't12': T12,
         'r064': R064, 'r085': R085, 'r21': R21,
         'water_mask': water_mask,
-        'shape': global_shape
+        'shape': global_shape,
+        'imageid': imageid
     }
 
 
@@ -195,7 +208,7 @@ def zenith(band, shape):
 
     if shape != Z.shape:
         if shape[0] > Z.shape[0]:
-            Z = np.concatenate((Z.flatten(), np.tile(Z[-1, :], shape[0] - Z.shape[0])))\
+            Z = np.concatenate((Z.flatten(), np.tile(Z[-1, :], shape[0] - Z.shape[0]))) \
                 .reshape((shape[0], Z.shape[1]))
         elif shape[0] < Z.shape[0]:
             Z = Z[:shape[0], :]
@@ -220,7 +233,7 @@ def get_fires_latlon(fires_ij):
     # print(latlon)
 
     # print(fires_ij)
-    fire_latlon = np.zeros(fires_ij.shape)
+    fire_latlon = np.zeros((fires_ij.shape[0], 2))
     for index, [i, j] in enumerate(fires_ij):
         fire_latlon[index] = np.array(
             [latlon['lat'][i, j], latlon['lon'][i, j]]
@@ -303,11 +316,12 @@ def calculate_polygon(i, j, latlon):
 def get_polygons(fires_ij):
     latlon = get_latlon()
 
-    fires_polygons = np.zeros(fires_ij.shape)
+    fires_polygons = np.zeros((fires_ij.shape[0], 5, 2))
     for index, [i, j] in enumerate(fires_ij):
         fires_polygons[index] = calculate_polygon(i, j, latlon)
 
     return fires_polygons
+
 
 """
 if time == 'day':

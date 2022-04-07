@@ -23,11 +23,13 @@ data = to.get_data('./files/mod1.hdf', './files/mod03.hdf')  # DONT CHANGE THIS!
 print('Got data')
 day_time = 'day'
 
-fires = cls.classify_fires(data, day_time)
-tr.img(fires, 'LOL')
+raw_class = cls.classify_fires(data, day_time)
+fires = raw_class['fires']
+t4 = raw_class['t4']
 
+tr.img(fires, 'Fires final')
 
-driver = gdal.GetDriverByName('GTiff')
+# driver = gdal.GetDriverByName('GTiff')
 
 # [cols, rows] = fires.shape
 # out_ds = driver.Create("fires.tif", cols, rows, 1, gdal.GDT_Float32)
@@ -37,10 +39,11 @@ driver = gdal.GetDriverByName('GTiff')
 #     'GTiff', 'fires.tif', modis_path
 # )
 
-fires_ij = np.dstack(np.where(fires == 1))
-fires_latlon = to.get_fires_latlon(fires)
+print('Fires final:', tr.counter(fires))
+fires_ij = np.dstack(np.where(fires == 1))[0]
+fires_latlon = to.get_fires_latlon(fires_ij)
 fires_polygons = to.get_polygons(fires_ij)
 
-
-writer.write_answer(fires_ij, fires_latlon, fires_polygons)
+writer.write_answer('kalin?', data['imageid'], fires_ij,
+                    fires_latlon, fires_polygons, t4, data['t11'])
 # print(writer.get_fires_latlon(fires))

@@ -54,29 +54,66 @@ def arrays2file(arrs, file_tag, file_name, parent_path):
 
 
 class FirePixel:
-    def __init__(self, i, j, latlon, polygon, V):
+    def __init__(self, i, j, latlon, polygon, t4, t11):
         self.i = i
         self.j = j
-        self.n = i * (j + 1) + j + 1
-        self.latlon = latlon
+        self.latlon = latlon  # 0 lat 1 lon
         self.polygon = polygon
+        self.t4 = t4
+        self.t11 = t11
 
-    @property
-    def b_wkt(self):
-        return 'POLY'
+    def get_dict(self):
+        d = dict()
 
-    @property
-    def b_latlon(self):
-        return self.latlon[0], self.latlon[1]
+        d['col'] = self.j
+        d['row'] = self.i
+        d['latitude'] = self.latlon[0]
+        d['longitude'] = self.latlon[1]
+        d['T4'] = self.t4
+        d['T11'] = self.t11
+
+        poly_coords = ' '.join([f"{ll[0]} {ll[1]}," for ll in self.polygon])[:-1]
+        d['pixel_poly'] = f'"POLYGON (({poly_coords}))"'
+        print(d['pixel_poly'])
+
+        return d
 
 
-def write_answer(ijs, latlons, polygons, t4, t11):
+def write_answer(region, imageid, ijs, latlons, polygons, t4, t11):
     pixels = []
     for i in range(len(ijs)):
         pixels.append(
-            FirePixel(ijs[i], latlons[i], polygons[i],
+            FirePixel(*ijs[i], latlons[i], polygons[i],
                       t4[ijs[i][0], ijs[i][1]],
                       t11[ijs[i][0], ijs[i][1]])
         )
 
-    write_to_csv
+    print(*pixels, sep='\n')
+
+    write_to_csv(region, imageid, pixels)
+
+
+def write_to_csv(region, imageid, pixels):
+    [print('|' * 120) for i in range(8)]
+    print('WRITING CSV')
+    print(f"Writing {len(pixels)} pixels")
+    print(f"Go...")
+
+    import pandas as pd
+
+    data = []
+    for i, pixel in enumerate(pixels):
+        data.append({
+            **pixel.get_dict(),
+            'IMAGEID': imageid,
+            'region': region,
+            'N': i,
+        })
+
+    columns = ['IMAGEID', 'N', 'col', 'row', 'longitude', 'latitude',
+               'T4', 'T11', 'pixel_poly', 'region']
+
+    df = pd.DataFrame(data, columns=columns)
+    print(df)
+
+    df.to_csv('./output/ans.csv', index=False)
