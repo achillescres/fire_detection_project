@@ -18,6 +18,8 @@ def get_zenith_array(sd):
 
 
 def get_ma(band, mask=False):
+    if mask is False:
+        mask = np.full(band.shape, False)
     if type(mask) not in ('numpy.ma.core.MaskedArray', 'numpy.ndarray'):
         mask = np.full(band.shape, False)
 
@@ -25,7 +27,10 @@ def get_ma(band, mask=False):
 
 
 def mask_it(img):
-    d = img
+    try:
+        d = img.data
+    except Exception:
+        d = img
     # if 'mask' in dir(img):
     #     d = img.data
     #     d[img.mask] = np.nan

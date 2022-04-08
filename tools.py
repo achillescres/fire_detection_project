@@ -4,22 +4,7 @@ from math import isinf
 import troubles as tr
 
 from osgeo import gdal
-
 gdal.UseExceptions()
-
-
-def get_land_sea_mask(path):
-    path = gdal.Open(path).GetSubDatasets()[6][0]
-
-    mask = gdal.Open(path).ReadAsArray()
-    print(tr.counter(mask))
-    mask = tr.get_ma(mask)
-    mask.data[mask >= 221] = -1
-    mask.mask[mask >= 221] = True
-
-    water_mask = (mask == 0) | (mask == 3)
-
-    return water_mask
 
 
 def get_data(file_path, file03_path):
@@ -169,6 +154,28 @@ def get_data(file_path, file03_path):
     ###
 
     # Land water mask
+    def get_land_sea_mask(path):
+        path = gdal.Open(path).GetSubDatasets()[6][0]
+
+        mask = gdal.Open(path).ReadAsArray()
+
+        print(tr.counter(mask))
+        mask = tr.get_ma(mask)
+        mask.data[mask == 221] = 0
+        mask.mask[mask == 221] = True
+
+        def create_mask(mask, nums):
+            new_mask = np.zeros(mask.shape) == 1
+            for i in range(len(nums)):
+                new_mask = np.logical_or(new_mask, mask == nums[i])
+
+            return new_mask
+
+        numbers = (7, 6, 0, 3, 2)
+        water_mask = create_mask(mask, numbers)
+        tr.img(water_mask.astype(int), 'waterlmask')
+        return water_mask
+
     water_mask = get_land_sea_mask(file03_path)
     print('water mask')
     ###
@@ -180,12 +187,19 @@ def get_data(file_path, file03_path):
         global_shape = R064_band.ReadAsArray().shape
     print('shape')
 
+    emis_ds = None
+    ref250_ds = None
+    ref500_ds = None
+
+    all_mask = T4_21.mask | T4_22.mask | T11.mask | T12.mask | R064.mask | R085.mask | R21.mask
+
     return {
         't4_21': T4_21, 't4_22': T4_22, 't11': T11, 't12': T12,
         'r064': R064, 'r085': R085, 'r21': R21,
         'water_mask': water_mask,
         'shape': global_shape,
-        'imageid': imageid
+        'imageid': imageid,
+        'all_mask': all_mask
     }
 
 

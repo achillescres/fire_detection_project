@@ -1,6 +1,13 @@
 import numpy as np
 import troubles as tr
 
+# Classes
+# Unknown 0
+# Cloud 1
+# Water 2
+# Non fire 3
+# Fire 4
+
 
 def classify_fires(data, day_time):
     # Temps
@@ -18,7 +25,7 @@ def classify_fires(data, day_time):
 
     # Customing t4
     t4 = t4_22.copy()
-    t4_vrt = (t4_22 > 330.9) | t4_22.mask
+    t4_vrt = (t4_22 >= 331) | t4_22.mask
     t4[t4_vrt] = t4_21[t4_vrt]
     t4.mask[t4_21.mask & t4_vrt] = True
     print('Mounted data')
@@ -34,8 +41,8 @@ def classify_fires(data, day_time):
     print('ABS', tr.counter(classed.data))
     print('Cloud masked')
 
-    # Water mask 1
-    classed[water_mask & (~classed.mask)] = 1
+    # Water mask 2
+    classed[water_mask & (~classed.mask)] = 2
     classed.mask[water_mask & (~classed.mask)] = True
     print('ABS', tr.counter(classed.data))
     print('Water masked')
@@ -43,6 +50,8 @@ def classify_fires(data, day_time):
     # Show water_cloud mask
     tr.img(classed.data, 'Masked')
     tr.img(t4, 'T4')
+    tr.img(t11, 'T11')
+    tr.img(t12, 'T12')
 
     # Mark non potential fire
     classed = potential_fire(day_time, classed, t4, t11, r085)
@@ -58,12 +67,12 @@ def classify_fires(data, day_time):
 
     # Fires total
     fires = np.zeros(classed.shape, dtype=int)
-    fires[(classed == 3) & (~classed.mask)] = 1
+    fires[classed.data == 4] = 1
     print('ABS', tr.counter(fires.data))
     print('Fires')
     tr.img(fires, 'Fires')
 
-    return {'fires': fires, 't4': t4}
+    return {'fires': fires, 't4': t4, 'classed': classed}
 
 
 def cloud(time, classed: np.ma.masked_array, r064, r085, t12):
@@ -86,12 +95,12 @@ def potential_fire(time, classed, t4, t11, r085):
     tr.img(dT, 'Delta T')
     tr.img(r085, 'R085')
     if time == 'day':
-        vrt = ~((t4 > 310) & (dT > 10) & (r085 < 0.3))
-        classed[vrt] = 2
+        vrt = ~((t4 > 290) & (dT > 10) & (r085 < 0.3))
+        classed[vrt] = 3
         classed.mask[vrt] = True
     elif time == 'night':
-        vrt = ~((t4 > 305) & (dT > 10))
-        classed[vrt & (~classed.mask)] = 2
+        vrt = ~((t4 > 280) & (dT > 10))
+        classed[vrt & (~classed.mask)] = 3
         classed.mask[vrt] = True
     else:
         raise RuntimeError("var time must be 'day' or 'night'!")
@@ -102,12 +111,14 @@ def potential_fire(time, classed, t4, t11, r085):
 def absolute_fire(time, classed, t4):
     import troubles as tr
     if time == 'day':
-        vrt = (t4 > 340) & (~classed.mask)
-        tr.img(vrt.astype(int), 'VRT')
-        classed[vrt] = 3
+        vrt = (t4 >= 310) & (~classed.mask)
+        # tr.img(vrt.astype(int), 'VRT')
+        classed[vrt & (~classed.mask)] = 4
+        classed.mask[vrt & (~classed.mask)] = True
     elif time == 'night':
-        vrt = (t4 > 310) & (~classed.mask)
-        classed[vrt] = 3
+        vrt = (t4 > 320) & (~classed.mask)
+        classed[vrt & (~classed.mask)] = 4
+        classed.mask[vrt & (~classed.mask)] = True
     else:
         raise RuntimeError("var time must be 'day' or 'night'!")
 
