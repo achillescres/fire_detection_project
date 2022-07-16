@@ -171,9 +171,9 @@ def get_data(file_path, file03_path):
 
             return new_mask
 
-        numbers = (7, 6, 0, 3, 2)
+        numbers = tuple(int(s) for s in input('Enter land sea mask nums: ').split()) or (2, 3)
         water_mask = create_mask(mask, numbers)
-        tr.img(water_mask.astype(int), 'waterlmask')
+        tr.img(water_mask.astype(int), title='watermask')
         return water_mask
 
     water_mask = get_land_sea_mask(file03_path)
@@ -235,15 +235,15 @@ def zenith(band, shape):
     return Z
 
 
-def get_latlon():
-    lat = gdal.Open('HDF4_EOS:EOS_SWATH_GEOL:"./files/mod03.hdf":MODIS_Swath_Type_GEO:Latitude').ReadAsArray()
-    lon = gdal.Open('HDF4_EOS:EOS_SWATH_GEOL:"./files/mod03.hdf":MODIS_Swath_Type_GEO:Longitude').ReadAsArray()
+def get_latlon(mod03_path: str):
+    lat = gdal.Open(f'HDF4_EOS:EOS_SWATH_GEOL:"{mod03_path}":MODIS_Swath_Type_GEO:Latitude').ReadAsArray()
+    lon = gdal.Open(f'HDF4_EOS:EOS_SWATH_GEOL:"{mod03_path}":MODIS_Swath_Type_GEO:Longitude').ReadAsArray()
 
     return {'lat': lat, 'lon': lon}
 
 
-def get_fires_latlon(fires_ij):
-    latlon = get_latlon()
+def get_fires_latlon(fires_ij, mod03_path: str):
+    latlon = get_latlon(mod03_path)
     # print(latlon)
 
     # print(fires_ij)
@@ -327,21 +327,11 @@ def calculate_polygon(i, j, latlon):
     return polygon
 
 
-def get_polygons(fires_ij):
-    latlon = get_latlon()
+def get_polygons(fires_ij, mod03_path: str):
+    latlon = get_latlon(mod03_path)
 
     fires_polygons = np.zeros((fires_ij.shape[0], 5, 2))
     for index, [i, j] in enumerate(fires_ij):
         fires_polygons[index] = calculate_polygon(i, j, latlon)
 
     return fires_polygons
-
-
-"""
-if time == 'day':
-
-elif time == 'night':
-
-else:
-    raise RuntimeError("var time must be 'day' or 'night'!")
-"""

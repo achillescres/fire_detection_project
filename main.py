@@ -3,9 +3,6 @@ import tools as to
 import troubles as tr
 import classification as cls
 import writer
-import neighbor as nb
-
-import matplotlib.pyplot as plt
 
 from osgeo import gdal
 
@@ -19,10 +16,16 @@ gdal.UseExceptions()
 # Fire 4
 
 # Data
-modis_path = 'C:\\Users\\aital\\Downloads\\20220407_081730_TERRA_MOD021KM.hdf'  # DONT CHANGE THIS!
-mod03_path = '.C:\\Users\\aital\\Downloads\\20220407_081730_TERRA_MOD03.hdf'  # DONT CHANGE THIS!
-data = to.get_data('./files/mod1.hdf', './files/mod03.hdf')  # DONT CHANGE THIS!
+modis_path = input('Modis main product path: ') or './example/20220716_075533_AQUA_MOD021KM.hdf'
+mod03_path = input('Mod03 product path: ') or './example/20220716_075533_AQUA_MOD03.hdf'
+aoi_path = input('Aoi (must be .shp) path: ') or ''
+
+data = to.get_data(modis_path, mod03_path)
 print('Got data')
+
+if input('Your image must be daytime! Y/n: ').strip().lower() not in ['y', '', ' ']:
+    exit(-1)
+
 day_time = 'day'
 
 raw_class = cls.classify_fires(data, day_time)
@@ -49,8 +52,10 @@ writer.array2file(fires, 'GTiff', 'fires.tif', modis_path)
 
 print('Fires final:', tr.counter(fires))
 fires_ij = np.dstack(np.where(fires == 1))[0]
-fires_latlon = to.get_fires_latlon(fires_ij)
-fires_polygons = to.get_polygons(fires_ij)
+fires_latlon = to.get_fires_latlon(fires_ij, mod03_path)
+fires_polygons = to.get_polygons(fires_ij, mod03_path)
 
 writer.write_answer('kalin?', data['imageid'], fires_ij,
-                    fires_latlon, fires_polygons, t4, data['t11'])
+                    fires_latlon, fires_polygons, t4, data['t11'], aoi_path)
+
+print('\nSuccess!')

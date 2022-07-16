@@ -62,7 +62,7 @@ class FirePixel:
         self.polygon = polygon
         self.t4 = t4
         self.t11 = t11
-        self.region = ''
+        self.region = 'UNKNOWN'
 
     def get_dict(self):
         d = dict()
@@ -82,7 +82,7 @@ class FirePixel:
         return d
 
 
-def write_answer(region, imageid, ijs, latlons, polygons, t4, t11):
+def write_answer(region, imageid, ijs, latlons, polygons, t4, t11, aoi_path: str):
     pixels = []
     for i in range(len(ijs)):
         pixels.append(
@@ -91,7 +91,7 @@ def write_answer(region, imageid, ijs, latlons, polygons, t4, t11):
                       t11[ijs[i][0], ijs[i][1]])
         )
 
-    pixels = cut(pixels)
+    pixels = filter_with_aoi(pixels, aoi_path)
     print(*pixels, sep='\n')
 
     write_to_csv(region, imageid, pixels)
@@ -128,12 +128,15 @@ def write_to_csv(region, imageid, pixels):
         f.write(s)
 
 
-def cut(pixels):
+def filter_with_aoi(pixels, aoi_path):
+    if not aoi_path:
+        return pixels
+
     from osgeo import ogr
 
-    aoi_ds = ogr.Open("./files/aoi.shp")
-    aoi_layer = aoi_ds.GetLayer()
+    aoi_ds = ogr.Open(aoi_path)
     # first feature of the shapefile
+    aoi_layer = aoi_ds.GetLayer()
 
     inner_pixels = []
     for index, pixel in enumerate(pixels):

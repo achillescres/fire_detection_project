@@ -1,0 +1,5 @@
+# Don't use as regular req file
+numpy==1.21.5
+matplotlib==3.5.1
+pandas
+gdal
