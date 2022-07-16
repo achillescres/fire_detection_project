@@ -9,7 +9,8 @@
 
 Чтобы использовать нужен python 3.7 с установленным gdal, numpy, pandas, matplotlib. Рекомендую дистрибутив anaconda/miniconda.
 
-conda create -n fire_env python=3.7
-conda activate fire_env
-conda install gdal -c conda-forge
+Инструкция по установке зависимостей:
+conda create -n fire_env python=3.7 |
+conda activate fire_env |
+conda install gdal -c conda-forge |
 conda install numpy matplotlib pandas
